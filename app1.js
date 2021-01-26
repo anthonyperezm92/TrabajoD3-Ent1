@@ -1,4 +1,4 @@
-// I. Configuración
+// Configuracion de margenes y altura
 graf = d3.select('#graf')
 ancho_total = graf.style('width').slice(0, -2)
 alto_total = ancho_total * 9 / 16
@@ -11,7 +11,7 @@ margins = { top: 20, left: 50, right: 15, bottom: 120 }
 ancho = ancho_total - margins.left - margins.right
 alto  = alto_total - margins.top - margins.bottom
 
-// II. Variables globales
+// configuracion de svg
 svg = graf.append('svg')
           .style('width', `${ ancho_total }px`)
           .style('height', `${ alto_total }px`)
@@ -20,7 +20,7 @@ g = svg.append('g')
         .attr('transform', `translate(${ margins.left }, ${ margins.top })`)
         .attr('width', ancho + 'px')
         .attr('height', alto + 'px')
-
+// configuracion de escalas
 y = d3.scaleLinear()
           .range([alto, 0])
 
@@ -30,9 +30,8 @@ x = d3.scaleBand()
       .paddingOuter(0.3)
 
 color = d3.scaleOrdinal()
-          // https://bl.ocks.org/pstuffa/3393ff2711a53975040077b7453781a9
           .range(d3.schemeAccent)
-
+// Se agrega los ejes
 xAxisGroup = g.append('g')
               .attr('transform', `translate(0, ${ alto })`)
               .attr('class', 'eje')
@@ -41,21 +40,19 @@ yAxisGroup = g.append('g')
 
 dataArray = []
 
-// (1) Variables globales para determinar que mostrar y
-//     poder obtener los datos del select
+// Selector de top
 topSelect = d3.select('#seltop')
 
 metrica = 'promedio'
 ascendente = false
-
+// se crea el tooltip de ayuda
 var tooltip = d3.select("body").append("div").attr("class", "toolTip");
-// III. render (update o dibujo)
+// render (update o dibujo)
 function render(data) {
-  // function(d, i) { return d }
-  // (d, i) => d
+// bind de los datos
   bars = g.selectAll('rect')
             .data(data, d => d.Pais)
-
+// dibujo y transicion de las barras
   bars.enter()
       .append('rect')
         .style('width', '0px')
@@ -64,8 +61,6 @@ function render(data) {
         .style('fill', '#000')        
       .merge(bars)
         .transition()
-        // https://bl.ocks.org/d3noob/1ea51d03775b9650e8dfd03474e202fe
-        // .ease(d3.easeElastic)
         .duration(2000)
           .style('x', d => x(d.Pais) + 'px')
           .style('y', d => (y(d[metrica])) + 'px')
@@ -73,6 +68,7 @@ function render(data) {
           .style('fill', d => color(d.Pais))
           .style('width', d => `${x.bandwidth()}px`)
 
+// evento para msotrar el tooltip
           g.selectAll('rect')
             .on("mousemove", function(event,d){
               tooltip
@@ -81,7 +77,7 @@ function render(data) {
                 .style("display", "inline-block")
                 .html((d.Pais) + "<br>" + "Promedio Suicidios: " + (d.promedio));
           })
-
+  // transicion de salida
   bars.exit()
       .transition()
       .duration(2000)
@@ -90,7 +86,7 @@ function render(data) {
         .style('fill', '#000000')
       .remove()
 
-
+// efectos de transicion de los ejes
   yAxisCall = d3.axisLeft(y)
                 .ticks(10)
                 .tickFormat(d => d + '')
@@ -109,7 +105,7 @@ function render(data) {
             .attr('transform', 'rotate(-60)')
 }
 
-// IV. Carga de datos
+//  Carga de datos desde csv
 d3.csv('promedio_suma.csv')
 .then(function(data) {
   data.forEach(d => {
@@ -117,9 +113,10 @@ d3.csv('promedio_suma.csv')
   })
 debugger;
   dataArray = data
-
+// agregar domio de color
   color.domain(data.map(d => d.Pais))
 
+    // llenar option del select
   var opt = [{valor: '5' , texto : 'TOP 5'},{valor: '10' , texto : 'TOP 10'},{valor: '20' , texto : 'TOP 20'}]
 
  opt.forEach(d => {
@@ -129,7 +126,7 @@ debugger;
                 .text(d.texto)
   })
 
-  // V. Despliegue
+  ///  Despliegue
   frame()
 })
 .catch(e => {
@@ -138,27 +135,28 @@ debugger;
 
 function frame() {
   dataframe = dataArray
+  // ordenar las barras top
   dataframe.sort((a, b) => {
     debugger;
     return  d3.descending(a.promedio, b.promedio)
   })
 
+// se obtiene el valor seleccionado
   var num =   0 + topSelect.node().value
 
+// filtrar los datos por el filtro seleccionado
   dataframe = dataArray.slice(0, num)
 
 
-  // Calcular la altura más alta dentro de
-  // los datos (columna "oficial")
+  // Calcular la altura maxima del eje
   maxy = d3.max(dataframe, d => d.promedio)
-  // Creamos una función para calcular la altura
-  // de las barras y que quepan en nuestro canvas
+  // seteo de los dominios
   y.domain([0, maxy])
   x.domain(dataframe.map(d => d.Pais))
-
+// invocar al render
   render(dataframe)
 }
-
+// eventos
 topSelect.on('change', () => {
   frame()
 })
